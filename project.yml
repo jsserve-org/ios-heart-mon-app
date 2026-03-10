@@ -1,0 +1,36 @@
+name: AirPodsHealthMonitor
+options:
+  bundleIdPrefix: com.airpodshealth
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    ENABLE_STRICT_CONCURRENCY: complete
+
+targets:
+  AirPodsHealthMonitor:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: AirPodsHealthMonitor/Sources
+    resources:
+      - path: AirPodsHealthMonitor/Resources/Info.plist
+    info:
+      path: AirPodsHealthMonitor/Resources/Info.plist
+    entitlements:
+      path: AirPodsHealthMonitor/Resources/AirPodsHealth.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.airpodshealth.monitor
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0
+        INFOPLIST_FILE: AirPodsHealthMonitor/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: AirPodsHealthMonitor/Resources/AirPodsHealth.entitlements
+        DEVELOPMENT_TEAM: 5T73F3B4MF
+    capabilities:
+      healthKit: {}
