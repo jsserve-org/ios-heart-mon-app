@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0DEAEE63EDCB617AB7F8CCA9 /* CocoaMQTT in Frameworks */ = {isa = PBXBuildFile; productRef = FF4868184333CDC6F386AE3E /* CocoaMQTT */; };
 		2EA69CFFE5827DCF021174E6 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C743D065C2991F61F01D9A4D /* HealthKitManager.swift */; };
+		769039E666FB2336BA98D1B9 /* MQTTManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD8644221C10522BF63E1ABD /* MQTTManager.swift */; };
 		D41A62EA87888B9F62BADEB3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BDB235774D4129C935AAE94 /* ContentView.swift */; };
 		E32244217865F7C6E5327194 /* AirPodsHealthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19239984498F0961725E035F /* AirPodsHealthApp.swift */; };
 /* End PBXBuildFile section */
@@ -17,7 +19,19 @@
 		19239984498F0961725E035F /* AirPodsHealthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirPodsHealthApp.swift; sourceTree = "<group>"; };
 		4BDB235774D4129C935AAE94 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C743D065C2991F61F01D9A4D /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
+		CD8644221C10522BF63E1ABD /* MQTTManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MQTTManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0A2D261A28E70EA163AFAEE9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0DEAEE63EDCB617AB7F8CCA9 /* CocoaMQTT in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		0DC750FD8A991C54845EC7B2 = {
@@ -50,6 +64,7 @@
 				19239984498F0961725E035F /* AirPodsHealthApp.swift */,
 				4BDB235774D4129C935AAE94 /* ContentView.swift */,
 				C743D065C2991F61F01D9A4D /* HealthKitManager.swift */,
+				CD8644221C10522BF63E1ABD /* MQTTManager.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -62,6 +77,7 @@
 			buildConfigurationList = 2AC82DAAFF3122AADC38464C /* Build configuration list for PBXNativeTarget "AirPodsHealthMonitor" */;
 			buildPhases = (
 				164B5565E7F2EB32635DC771 /* Sources */,
+				0A2D261A28E70EA163AFAEE9 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -69,6 +85,7 @@
 			);
 			name = AirPodsHealthMonitor;
 			packageProductDependencies = (
+				FF4868184333CDC6F386AE3E /* CocoaMQTT */,
 			);
 			productName = AirPodsHealthMonitor;
 			productReference = 0A18F00F371D0FA998301F89 /* AirPodsHealthMonitor.app */;
@@ -89,6 +106,7 @@
 				};
 			};
 			buildConfigurationList = 1275A589A3D969E44689CDCE /* Build configuration list for PBXProject "AirPodsHealthMonitor" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -97,8 +115,10 @@
 			);
 			mainGroup = 0DC750FD8A991C54845EC7B2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				330C243C0B87678BE160B8AB /* XCRemoteSwiftPackageReference "CocoaMQTT" */,
+			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = A5E529FAE90AAD8A087E9415 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -115,6 +135,7 @@
 				E32244217865F7C6E5327194 /* AirPodsHealthApp.swift in Sources */,
 				D41A62EA87888B9F62BADEB3 /* ContentView.swift in Sources */,
 				2EA69CFFE5827DCF021174E6 /* HealthKitManager.swift in Sources */,
+				769039E666FB2336BA98D1B9 /* MQTTManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,7 +151,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5T73F3B4MF;
 				INFOPLIST_FILE = AirPodsHealthMonitor/Resources/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -178,7 +199,6 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_CONCURRENCY = complete;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -188,13 +208,14 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
@@ -234,7 +255,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_CONCURRENCY = complete;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -251,7 +271,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -259,6 +279,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
@@ -272,7 +293,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5T73F3B4MF;
 				INFOPLIST_FILE = AirPodsHealthMonitor/Resources/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -306,6 +327,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		330C243C0B87678BE160B8AB /* XCRemoteSwiftPackageReference "CocoaMQTT" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/emqx/CocoaMQTT.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FF4868184333CDC6F386AE3E /* CocoaMQTT */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 330C243C0B87678BE160B8AB /* XCRemoteSwiftPackageReference "CocoaMQTT" */;
+			productName = CocoaMQTT;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 15074C6310476F3A0F6A9FD9 /* Project object */;
 }

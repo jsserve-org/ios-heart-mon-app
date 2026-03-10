@@ -19,7 +19,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>AirPods Health Monitor reads your heart rate data recorded by your AirPods Pro 3 to display it in real time.</string>
+	<string>This app reads your heart rate data from AirPods Pro to display and transmit via MQTT.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>

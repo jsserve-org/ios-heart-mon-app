@@ -11,6 +11,8 @@ class HealthKitManager: ObservableObject {
     @Published var errorMessage: String? = nil
     @Published var airPodsSource: String? = nil
 
+    var mqttManager: MQTTManager?
+
     enum AuthStatus {
         case notDetermined, authorized, denied, unavailable
     }
@@ -97,6 +99,10 @@ class HealthKitManager: ObservableObject {
         lastUpdated = sample.startDate
         airPodsSource = isAirPods(sample.sourceRevision) ? sample.sourceRevision.source.name : nil
         errorMessage = nil
+
+        if let bpm = heartRate, let ts = lastUpdated {
+            mqttManager?.publishHeartRate(bpm, source: airPodsSource, timestamp: ts)
+        }
     }
 
     // AirPods Pro 3 surfaces its source name as "AirPods" in HealthKit.

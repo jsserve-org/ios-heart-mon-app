@@ -2,23 +2,39 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var hkManager = HealthKitManager()
+    @StateObject private var mqttManager = MQTTManager()
+    @State private var showMQTTSettings = false
 
     var body: some View {
-        ZStack {
-            background
-            VStack(spacing: 0) {
-                headerBar
-                Spacer()
-                heartRateDisplay
-                Spacer()
-                sourceCard
-                Spacer()
-                footerTimestamp
-                    .padding(.bottom, 40)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    heartRateCard
+                    sourceCard
+                    mqttStatusCard
+                    footerTimestamp
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+            }
+            .navigationTitle("Heart Rate")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Label("AirPods Pro 3", systemImage: "airpodspro")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    statusDot
+                }
             }
         }
         .task {
+            hkManager.mqttManager = mqttManager
             await hkManager.requestAuthorization()
+        }
+        .sheet(isPresented: $showMQTTSettings) {
+            MQTTSettingsView(manager: mqttManager)
         }
         .alert("Error", isPresented: Binding(
             get: { hkManager.errorMessage != nil },
@@ -32,31 +48,6 @@ struct ContentView: View {
 
     // MARK: - Subviews
 
-    private var background: some View {
-        LinearGradient(
-            colors: [Color(red: 0.05, green: 0.05, blue: 0.15),
-                     Color(red: 0.10, green: 0.05, blue: 0.20)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
-    }
-
-    private var headerBar: some View {
-        HStack {
-            Image(systemName: "airpodspro")
-                .font(.title2)
-                .foregroundStyle(.white.opacity(0.8))
-            Text("AirPods Pro 3")
-                .font(.headline)
-                .foregroundStyle(.white.opacity(0.8))
-            Spacer()
-            statusDot
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-    }
-
     private var statusDot: some View {
         HStack(spacing: 6) {
             Circle()
@@ -64,26 +55,24 @@ struct ContentView: View {
                 .frame(width: 8, height: 8)
             Text(hkManager.heartRate != nil ? "Live" : "Waiting")
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.secondary)
         }
     }
 
-    private var heartRateDisplay: some View {
-        VStack(spacing: 8) {
-            // Pulsing heart icon
+    private var heartRateCard: some View {
+        VStack(spacing: 12) {
             PulsingHeart(bpm: hkManager.heartRate)
 
             if let bpm = hkManager.heartRate {
                 HStack(alignment: .bottom, spacing: 4) {
                     Text("\(Int(bpm))")
-                        .font(.system(size: 96, weight: .thin, design: .rounded))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 80, weight: .thin, design: .rounded))
                         .contentTransition(.numericText())
                         .animation(.spring(duration: 0.4), value: bpm)
                     Text("BPM")
-                        .font(.title2)
-                        .foregroundStyle(.white.opacity(0.5))
-                        .padding(.bottom, 14)
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                        .padding(.bottom, 10)
                 }
             } else {
                 placeholderBPM
@@ -91,10 +80,13 @@ struct ContentView: View {
 
             Text("Heart Rate")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(.secondary)
                 .tracking(2)
                 .textCase(.uppercase)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 24))
     }
 
     private var placeholderBPM: some View {
@@ -103,20 +95,20 @@ struct ContentView: View {
             case .denied:
                 VStack(spacing: 8) {
                     Image(systemName: "lock.shield")
-                        .font(.system(size: 48))
+                        .font(.system(size: 40))
                         .foregroundStyle(.orange)
                     Text("Access Denied")
                         .font(.title3)
                         .foregroundStyle(.orange)
-                    Text("Open Settings → Privacy → Health\nand allow Heart Rate access.")
+                    Text("Open Settings \u{2192} Privacy \u{2192} Health\nand allow Heart Rate access.")
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
             case .unavailable:
                 VStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 48))
+                        .font(.system(size: 40))
                         .foregroundStyle(.red)
                     Text("HealthKit unavailable")
                         .foregroundStyle(.red)
@@ -124,44 +116,65 @@ struct ContentView: View {
             default:
                 VStack(spacing: 16) {
                     ProgressView()
-                        .tint(.white)
                         .scaleEffect(1.4)
-                    Text("Waiting for data…")
+                    Text("Waiting for data\u{2026}")
                         .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.4))
+                        .foregroundStyle(.secondary)
                 }
             }
         }
-        .frame(height: 140)
+        .frame(height: 120)
     }
 
     private var sourceCard: some View {
         Group {
             if let source = hkManager.airPodsSource {
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .foregroundStyle(.green)
-                    Text("Source: \(source)")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                Label("Source: \(source)", systemImage: "checkmark.seal.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.green)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
             } else if hkManager.heartRate != nil {
-                HStack(spacing: 10) {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.yellow)
-                    Text("Source: Other device (pair AirPods Pro 3 for direct data)")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.5))
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
-                .padding(.horizontal, 24)
+                Label("Source: Other device (pair AirPods Pro 3 for direct data)", systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
             }
         }
+    }
+
+    private var mqttStatusCard: some View {
+        Button { showMQTTSettings = true } label: {
+            HStack(spacing: 10) {
+                Image(systemName: mqttManager.isEnabled
+                      ? (mqttManager.isConnected ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
+                      : "antenna.radiowaves.left.and.right.slash")
+                    .foregroundStyle(mqttManager.isEnabled
+                                     ? (mqttManager.isConnected ? .green : .orange)
+                                     : .secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(mqttManager.isEnabled
+                         ? (mqttManager.isConnected ? "MQTT Connected" : "MQTT Connecting\u{2026}")
+                         : "MQTT Disabled")
+                        .font(.subheadline)
+                    if mqttManager.isEnabled, mqttManager.messageCount > 0 {
+                        Text("\(mqttManager.messageCount) messages sent")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
     }
 
     private var footerTimestamp: some View {
@@ -169,7 +182,7 @@ struct ContentView: View {
             if let date = hkManager.lastUpdated {
                 Text("Updated \(date.formatted(date: .omitted, time: .standard))")
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.3))
+                    .foregroundStyle(.tertiary)
             }
         }
     }
@@ -183,7 +196,7 @@ struct PulsingHeart: View {
 
     var body: some View {
         Image(systemName: "heart.fill")
-            .font(.system(size: 60))
+            .font(.system(size: 52))
             .foregroundStyle(
                 LinearGradient(colors: [.pink, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
             )
@@ -200,6 +213,92 @@ struct PulsingHeart: View {
             withAnimation(.easeInOut(duration: interval * 0.3)) { scale = 1.0 }
             DispatchQueue.main.asyncAfter(deadline: .now() + interval * 0.7) {
                 startPulsing()
+            }
+        }
+    }
+}
+
+// MARK: - MQTT Settings
+
+struct MQTTSettingsView: View {
+    @ObservedObject var manager: MQTTManager
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Toggle("Enable MQTT", isOn: $manager.isEnabled)
+                } footer: {
+                    Text("Send heart rate data to an MQTT broker in real time.")
+                }
+
+                Section("Broker") {
+                    HStack {
+                        Text("Host")
+                            .frame(width: 50, alignment: .leading)
+                        TextField("broker.emqx.io", text: $manager.brokerHost)
+                            .textContentType(.URL)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
+                    HStack {
+                        Text("Port")
+                            .frame(width: 50, alignment: .leading)
+                        TextField("1883", text: $manager.brokerPort)
+                            .keyboardType(.numberPad)
+                    }
+                }
+
+                Section("Topic") {
+                    TextField("airpods/heartrate", text: $manager.topic)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                }
+
+                Section("Status") {
+                    HStack {
+                        Text("Connection")
+                        Spacer()
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(manager.isConnected ? Color.green : Color.red)
+                                .frame(width: 8, height: 8)
+                            Text(manager.isConnected ? "Connected" : "Disconnected")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    HStack {
+                        Text("Messages Sent")
+                        Spacer()
+                        Text("\(manager.messageCount)")
+                            .foregroundStyle(.secondary)
+                    }
+                    if let last = manager.lastPublished {
+                        HStack {
+                            Text("Last Published")
+                            Spacer()
+                            Text(last.formatted(date: .omitted, time: .standard))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                if manager.isEnabled {
+                    Section {
+                        Button("Reconnect") {
+                            manager.disconnect()
+                            manager.connect()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("MQTT Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
             }
         }
     }
