@@ -10,6 +10,7 @@
 		0DEAEE63EDCB617AB7F8CCA9 /* CocoaMQTT in Frameworks */ = {isa = PBXBuildFile; productRef = FF4868184333CDC6F386AE3E /* CocoaMQTT */; };
 		2EA69CFFE5827DCF021174E6 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C743D065C2991F61F01D9A4D /* HealthKitManager.swift */; };
 		769039E666FB2336BA98D1B9 /* MQTTManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD8644221C10522BF63E1ABD /* MQTTManager.swift */; };
+		BE4C32A507143F000398F065 /* HTTPManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97B69450647F7A90111B210E /* HTTPManager.swift */; };
 		D41A62EA87888B9F62BADEB3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BDB235774D4129C935AAE94 /* ContentView.swift */; };
 		E32244217865F7C6E5327194 /* AirPodsHealthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19239984498F0961725E035F /* AirPodsHealthApp.swift */; };
 /* End PBXBuildFile section */
@@ -18,6 +19,7 @@
 		0A18F00F371D0FA998301F89 /* AirPodsHealthMonitor.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AirPodsHealthMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		19239984498F0961725E035F /* AirPodsHealthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirPodsHealthApp.swift; sourceTree = "<group>"; };
 		4BDB235774D4129C935AAE94 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		97B69450647F7A90111B210E /* HTTPManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPManager.swift; sourceTree = "<group>"; };
 		C743D065C2991F61F01D9A4D /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
 		CD8644221C10522BF63E1ABD /* MQTTManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MQTTManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -64,6 +66,7 @@
 				19239984498F0961725E035F /* AirPodsHealthApp.swift */,
 				4BDB235774D4129C935AAE94 /* ContentView.swift */,
 				C743D065C2991F61F01D9A4D /* HealthKitManager.swift */,
+				97B69450647F7A90111B210E /* HTTPManager.swift */,
 				CD8644221C10522BF63E1ABD /* MQTTManager.swift */,
 			);
 			path = Sources;
@@ -134,6 +137,7 @@
 			files = (
 				E32244217865F7C6E5327194 /* AirPodsHealthApp.swift in Sources */,
 				D41A62EA87888B9F62BADEB3 /* ContentView.swift in Sources */,
+				BE4C32A507143F000398F065 /* HTTPManager.swift in Sources */,
 				2EA69CFFE5827DCF021174E6 /* HealthKitManager.swift in Sources */,
 				769039E666FB2336BA98D1B9 /* MQTTManager.swift in Sources */,
 			);

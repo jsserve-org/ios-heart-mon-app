@@ -15,6 +15,15 @@ final class MQTTManager: NSObject, ObservableObject, @preconcurrency CocoaMQTTDe
     @Published var topic: String {
         didSet { UserDefaults.standard.set(topic, forKey: "mqtt_topic") }
     }
+    @Published var username: String {
+        didSet { UserDefaults.standard.set(username, forKey: "mqtt_username") }
+    }
+    @Published var password: String {
+        didSet { UserDefaults.standard.set(password, forKey: "mqtt_password") }
+    }
+    @Published var clientName: String {
+        didSet { UserDefaults.standard.set(clientName, forKey: "mqtt_client_name") }
+    }
     @Published var isEnabled: Bool {
         didSet {
             UserDefaults.standard.set(isEnabled, forKey: "mqtt_enabled")
@@ -31,6 +40,9 @@ final class MQTTManager: NSObject, ObservableObject, @preconcurrency CocoaMQTTDe
         brokerHost = defaults.string(forKey: "mqtt_host") ?? "broker.emqx.io"
         brokerPort = defaults.string(forKey: "mqtt_port") ?? "1883"
         topic = defaults.string(forKey: "mqtt_topic") ?? "airpods/heartrate"
+        username = defaults.string(forKey: "mqtt_username") ?? ""
+        password = defaults.string(forKey: "mqtt_password") ?? ""
+        clientName = defaults.string(forKey: "mqtt_client_name") ?? "AirPodsMon"
         isEnabled = defaults.bool(forKey: "mqtt_enabled")
         super.init()
         if isEnabled { connect() }
@@ -39,8 +51,13 @@ final class MQTTManager: NSObject, ObservableObject, @preconcurrency CocoaMQTTDe
     func connect() {
         mqtt?.disconnect()
         let port = UInt16(brokerPort) ?? 1883
-        let clientID = "AirPodsMon-\(UUID().uuidString.prefix(8))"
+        let prefix = clientName.isEmpty ? "AirPodsMon" : clientName
+        let clientID = "\(prefix)-\(UUID().uuidString.prefix(8))"
         let client = CocoaMQTT(clientID: clientID, host: brokerHost, port: port)
+        if !username.isEmpty {
+            client.username = username
+            client.password = password
+        }
         client.delegate = self
         client.keepAlive = 60
         client.autoReconnect = true
