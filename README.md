@@ -8,6 +8,7 @@ An iOS app that fetches and displays real-time heart rate data from **AirPods Pr
 - **Pulsing heart animation** — beats at your actual measured BPM with glow effects
 - **Heart rate zones** — Rest, Fat Burn, Cardio, Peak, Extreme with color coding
 - **Live statistics** — min, max, and average across your session
+- **Live ECG waveform** — synthetic PQRST trace scrolling at your BPM
 - **Sparkline chart** — visual trend of your last 30 readings
 - **Reading history** — scrollable sheet of all captured readings with timestamps
 - **Haptic feedback** — subtle taps synced to each heartbeat
