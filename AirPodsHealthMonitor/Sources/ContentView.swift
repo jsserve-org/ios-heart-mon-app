@@ -145,6 +145,10 @@ struct ContentView: View {
                         .padding(.bottom, 14)
                 }
 
+                ECGWaveformView(bpm: bpm)
+                    .frame(height: 60)
+                    .padding(.horizontal, 20)
+
                 SparklineChart(values: hkManager.history.prefix(30).map(\.bpm).reversed())
                     .frame(height: 40)
                     .padding(.horizontal, 48)
@@ -419,6 +423,167 @@ struct SparklineChart: View {
             }
         }
     }
+}
+
+// MARK: - ECG Waveform
+
+struct ECGWaveformView: View {
+    let bpm: Double
+    @State private var phase: CGFloat = 0
+    @State private var timer: Timer?
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+
+            ZStack {
+                // Grid lines (hospital monitor style)
+                ECGGrid()
+                    .stroke(Color.green.opacity(0.06), lineWidth: 0.5)
+
+                // Main trace
+                ECGTrace(phase: phase, samplesPerBeat: max(w * 0.4, 80))
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.green.opacity(0.1),
+                                Color.green.opacity(0.5),
+                                Color.green,
+                                Color.green.opacity(0.3)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                    )
+
+                // Glow layer
+                ECGTrace(phase: phase, samplesPerBeat: max(w * 0.4, 80))
+                    .stroke(Color.green.opacity(0.25), lineWidth: 6)
+                    .blur(radius: 4)
+
+                // Leading dot
+                let dotX = w * 0.92
+                let traceY = ecgY(at: phase, in: h)
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 4, height: 4)
+                    .shadow(color: .green.opacity(0.8), radius: 4)
+                    .position(x: dotX, y: traceY)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.green.opacity(0.1), lineWidth: 1)
+            )
+        }
+        .onAppear { startTimer() }
+        .onDisappear { stopTimer() }
+        .onChange(of: bpm) { _, _ in startTimer() }
+    }
+
+    private func startTimer() {
+        stopTimer()
+        guard bpm > 0 else { return }
+        // 60 fps update
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
+            let samplesPerBeat = UIScreen.main.bounds.width * 0.4
+            let increment = 1.0 / (samplesPerBeat * CGFloat(bpm / 60.0)) * 60.0
+            Task { @MainActor in
+                phase += increment
+                if phase > 1000 { phase -= 1000 }
+            }
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func ecgY(at phase: CGFloat, in height: CGFloat) -> CGFloat {
+        let t = phase - floor(phase)
+        let mid = height * 0.5
+        let amp = height * 0.35
+        return mid - ecgValue(at: t) * amp
+    }
+}
+
+struct ECGTrace: Shape {
+    var phase: CGFloat
+    var samplesPerBeat: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let mid = rect.height * 0.5
+        let amp = rect.height * 0.35
+
+        let totalSamples = Int(samplesPerBeat)
+        for i in 0...totalSamples {
+            let x = rect.width * CGFloat(i) / CGFloat(totalSamples)
+            let t = (CGFloat(i) / samplesPerBeat + phase) - floor(CGFloat(i) / samplesPerBeat + phase)
+            let y = mid - ecgValue(at: t) * amp
+
+            if i == 0 {
+                path.move(to: CGPoint(x: x, y: y))
+            } else {
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+        return path
+    }
+}
+
+struct ECGGrid: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let step: CGFloat = 20
+        var x: CGFloat = 0
+        while x <= rect.width {
+            path.move(to: CGPoint(x: x, y: 0))
+            path.addLine(to: CGPoint(x: x, y: rect.height))
+            x += step
+        }
+        var y: CGFloat = 0
+        while y <= rect.height {
+            path.move(to: CGPoint(x: 0, y: y))
+            path.addLine(to: CGPoint(x: rect.width, y: y))
+            y += step
+        }
+        return path
+    }
+}
+
+/// Synthetic PQRST waveform — t is 0...1 within one beat cycle
+private func ecgValue(at t: CGFloat) -> CGFloat {
+    // Baseline
+    var v: CGFloat = 0
+
+    // P wave (small bump at ~0.1)
+    v += gaussian(t, center: 0.10, width: 0.025, height: 0.12)
+
+    // Q wave (small dip before R)
+    v -= gaussian(t, center: 0.18, width: 0.008, height: 0.08)
+
+    // R wave (tall spike)
+    v += gaussian(t, center: 0.20, width: 0.012, height: 1.0)
+
+    // S wave (dip after R)
+    v -= gaussian(t, center: 0.23, width: 0.010, height: 0.20)
+
+    // T wave (medium bump at ~0.35)
+    v += gaussian(t, center: 0.35, width: 0.035, height: 0.25)
+
+    // Small U wave
+    v += gaussian(t, center: 0.45, width: 0.025, height: 0.04)
+
+    return v
+}
+
+private func gaussian(_ t: CGFloat, center: CGFloat, width: CGFloat, height: CGFloat) -> CGFloat {
+    let d = (t - center) / width
+    return height * exp(-d * d * 0.5)
 }
 
 // MARK: - History Sheet
