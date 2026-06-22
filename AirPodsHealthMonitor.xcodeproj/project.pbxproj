@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A916143F7C0180DCB191E31 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDFEBDBC82D6C776762E581F /* HapticManager.swift */; };
 		2EA69CFFE5827DCF021174E6 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C743D065C2991F61F01D9A4D /* HealthKitManager.swift */; };
 		D41A62EA87888B9F62BADEB3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BDB235774D4129C935AAE94 /* ContentView.swift */; };
 		E32244217865F7C6E5327194 /* AirPodsHealthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19239984498F0961725E035F /* AirPodsHealthApp.swift */; };
@@ -17,6 +18,7 @@
 		19239984498F0961725E035F /* AirPodsHealthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirPodsHealthApp.swift; sourceTree = "<group>"; };
 		4BDB235774D4129C935AAE94 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C743D065C2991F61F01D9A4D /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
+		CDFEBDBC82D6C776762E581F /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -49,6 +51,7 @@
 			children = (
 				19239984498F0961725E035F /* AirPodsHealthApp.swift */,
 				4BDB235774D4129C935AAE94 /* ContentView.swift */,
+				CDFEBDBC82D6C776762E581F /* HapticManager.swift */,
 				C743D065C2991F61F01D9A4D /* HealthKitManager.swift */,
 			);
 			path = Sources;
@@ -114,6 +117,7 @@
 			files = (
 				E32244217865F7C6E5327194 /* AirPodsHealthApp.swift in Sources */,
 				D41A62EA87888B9F62BADEB3 /* ContentView.swift in Sources */,
+				0A916143F7C0180DCB191E31 /* HapticManager.swift in Sources */,
 				2EA69CFFE5827DCF021174E6 /* HealthKitManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
