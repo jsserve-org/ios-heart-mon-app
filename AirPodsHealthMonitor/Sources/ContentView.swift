@@ -3,6 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var hkManager = HealthKitManager()
     @State private var showHistory = false
+    @State private var sessionElapsed: TimeInterval = 0
+    @State private var sessionTimer: Timer?
 
     var body: some View {
         ZStack {
@@ -15,7 +17,8 @@ struct ContentView: View {
                 Spacer()
                 if hkManager.heartRate != nil {
                     zoneIndicator
-                    statsCards
+                    metricsPanel
+                    zoneBreakdownChart
                 }
                 Spacer()
                 footerBar
@@ -28,6 +31,8 @@ struct ContentView: View {
         .task {
             await hkManager.requestAuthorization()
         }
+        .onAppear { startSessionTimer() }
+        .onDisappear { sessionTimer?.invalidate() }
         .alert("Error", isPresented: Binding(
             get: { hkManager.errorMessage != nil },
             set: { if !$0 { hkManager.errorMessage = nil } }
@@ -35,6 +40,16 @@ struct ContentView: View {
             Button("OK", role: .cancel) { hkManager.errorMessage = nil }
         } message: {
             Text(hkManager.errorMessage ?? "")
+        }
+    }
+
+    // MARK: - Session Timer
+
+    private func startSessionTimer() {
+        sessionTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            Task { @MainActor in
+                sessionElapsed = hkManager.sessionDuration
+            }
         }
     }
 
@@ -83,6 +98,11 @@ struct ContentView: View {
             Spacer()
 
             HStack(spacing: 12) {
+                if hkManager.sessionStart != nil {
+                    Text(formatDuration(sessionElapsed))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.white.opacity(0.35))
+                }
                 statusDot
                 Button {
                     showHistory = true
@@ -125,24 +145,33 @@ struct ContentView: View {
 
     private var heartRateDisplay: some View {
         VStack(spacing: 12) {
-            EnhancedPulsingHeart(bpm: hkManager.heartRate)
-                .onTapGesture {
-                    if hkManager.heartRate != nil {
-                        HapticManager.shared.heartbeat()
-                    }
-                }
-
             if let bpm = hkManager.heartRate {
-                HStack(alignment: .lastTextBaseline, spacing: 4) {
-                    Text("\(Int(bpm))")
-                        .font(.system(size: 96, weight: .thin, design: .rounded))
-                        .foregroundStyle(.white)
-                        .contentTransition(.numericText())
-                        .animation(.spring(duration: 0.4), value: bpm)
-                    Text("BPM")
-                        .font(.title3.weight(.light))
-                        .foregroundStyle(.white.opacity(0.4))
-                        .padding(.bottom, 14)
+                // Circular gauge with BPM inside
+                ZStack {
+                    CircularHRGauge(value: bpm, max: hkManager.maxHR, color: zoneColor(for: bpm))
+                        .frame(width: 180, height: 180)
+
+                    VStack(spacing: 2) {
+                        Text("\(Int(bpm))")
+                            .font(.system(size: 56, weight: .thin, design: .rounded))
+                            .foregroundStyle(.white)
+                            .contentTransition(.numericText())
+                            .animation(.spring(duration: 0.4), value: bpm)
+                        Text("BPM")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.4))
+                            .tracking(2)
+                    }
+
+                    // Trend arrow at top of gauge
+                    HStack(spacing: 4) {
+                        Image(systemName: hkManager.trend.icon)
+                            .font(.caption2)
+                        Text(hkManager.trend.rawValue)
+                            .font(.caption2.weight(.medium))
+                    }
+                    .foregroundStyle(hkManager.trend.color)
+                    .offset(y: -105)
                 }
 
                 ECGWaveformView(bpm: bpm)
@@ -154,14 +183,9 @@ struct ContentView: View {
                     .padding(.horizontal, 48)
                     .opacity(0.7)
             } else {
+                EnhancedPulsingHeart(bpm: nil)
                 placeholderBPM
             }
-
-            Text("Heart Rate")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.white.opacity(0.35))
-                .tracking(3)
-                .textCase(.uppercase)
         }
     }
 
@@ -235,18 +259,47 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Stats Cards
+    // MARK: - Metrics Panel
 
-    private var statsCards: some View {
+    private var metricsPanel: some View {
         Group {
             if let stats = hkManager.stats, stats.count > 1 {
-                HStack(spacing: 12) {
-                    statCard(label: "Min", value: "\(Int(stats.min))", color: .blue)
-                    statCard(label: "Avg", value: "\(Int(stats.average))", color: .white)
-                    statCard(label: "Max", value: "\(Int(stats.max))", color: .red)
+                VStack(spacing: 10) {
+                    // Top row: Min / Avg / Max
+                    HStack(spacing: 12) {
+                        statCard(label: "Min", value: "\(Int(stats.min))", color: .blue)
+                        statCard(label: "Avg", value: "\(Int(stats.average))", color: .white)
+                        statCard(label: "Max", value: "\(Int(stats.max))", color: .red)
+                    }
+
+                    // Bottom row: HRV / Readings / Session
+                    HStack(spacing: 12) {
+                        if let hrv = hkManager.hrv {
+                            metricTile(
+                                icon: "waveform.path.ecg",
+                                label: "HRV",
+                                value: String(format: "%.0f ms", hrv),
+                                color: hrvColor(hrv)
+                            )
+                        }
+                        metricTile(
+                            icon: "number",
+                            label: "Readings",
+                            value: "\(hkManager.history.count)",
+                            color: .white.opacity(0.6)
+                        )
+                        if sessionElapsed > 0 {
+                            metricTile(
+                                icon: "timer",
+                                label: "Session",
+                                value: formatDuration(sessionElapsed),
+                                color: .white.opacity(0.6)
+                            )
+                        }
+                    }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
+                .padding(.top, 14)
             }
         }
     }
@@ -263,12 +316,80 @@ struct ContentView: View {
                 .tracking(1)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
+        .padding(.vertical, 10)
+        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(.white.opacity(0.06), lineWidth: 1)
         )
+    }
+
+    private func metricTile(icon: String, label: String, value: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption2)
+                .foregroundStyle(color.opacity(0.6))
+            Text(value)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.35))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(.white.opacity(0.04), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Zone Breakdown
+
+    private var zoneBreakdownChart: some View {
+        Group {
+            if !hkManager.zoneBreakdown.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Time in Zones")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.35))
+                        .textCase(.uppercase)
+                        .tracking(1)
+
+                    HStack(spacing: 3) {
+                        ForEach(hkManager.zoneBreakdown) { entry in
+                            let fraction = Double(entry.count) / Double(hkManager.history.count)
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(entry.zone.color)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 8)
+                                .opacity(max(fraction, 0.05))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                                .layoutPriority(fraction)
+                        }
+                    }
+                    .frame(height: 8)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+
+                    HStack(spacing: 12) {
+                        ForEach(hkManager.zoneBreakdown) { entry in
+                            let pct = Int(Double(entry.count) / Double(hkManager.history.count) * 100)
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(entry.zone.color)
+                                    .frame(width: 6, height: 6)
+                                Text("\(entry.zone.rawValue) \(pct)%")
+                                    .font(.caption2)
+                                    .foregroundStyle(.white.opacity(0.45))
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+            }
+        }
     }
 
     // MARK: - Footer
@@ -288,6 +409,79 @@ struct ContentView: View {
             }
         }
         .padding(.horizontal, 24)
+    }
+
+    // MARK: - Helpers
+
+    private func zoneColor(for bpm: Double) -> Color {
+        HealthKitManager.HeartRateZone.from(bpm: bpm).color
+    }
+
+    private func hrvColor(_ hrv: Double) -> Color {
+        switch hrv {
+        case ..<20: return .red
+        case 20..<50: return .orange
+        case 50..<100: return .green
+        default: return .blue
+        }
+    }
+
+    private func formatDuration(_ t: TimeInterval) -> String {
+        let h = Int(t) / 3600
+        let m = (Int(t) % 3600) / 60
+        let s = Int(t) % 60
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        }
+        return String(format: "%d:%02d", m, s)
+    }
+}
+
+// MARK: - Circular HR Gauge
+
+struct CircularHRGauge: View {
+    let value: Double
+    let max: Double
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            // Track
+            Circle()
+                .stroke(.white.opacity(0.06), lineWidth: 8)
+
+            // Filled arc
+            Circle()
+                .trim(from: 0, to: min(value / max, 1.0))
+                .stroke(
+                    AngularGradient(
+                        colors: [color.opacity(0.3), color, color.opacity(0.6)],
+                        center: .center,
+                        startAngle: .degrees(0),
+                        endAngle: .degrees(360 * value / max)
+                    ),
+                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+
+            // Glow
+            Circle()
+                .trim(from: 0, to: min(value / max, 1.0))
+                .stroke(color.opacity(0.2), lineWidth: 16)
+                .rotationEffect(.degrees(-90))
+                .blur(radius: 6)
+
+            // Tick marks
+            ForEach(0..<12) { i in
+                let angle = Double(i) * 30.0
+                let isMajor = i % 3 == 0
+                Rectangle()
+                    .fill(.white.opacity(isMajor ? 0.15 : 0.07))
+                    .frame(width: 1.5, height: isMajor ? 10 : 6)
+                    .offset(y: -80)
+                    .rotationEffect(.degrees(angle))
+            }
+        }
     }
 }
 
@@ -486,7 +680,6 @@ struct ECGWaveformView: View {
     private func startTimer() {
         stopTimer()
         guard bpm > 0 else { return }
-        // 60 fps update
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
             let samplesPerBeat = UIScreen.main.bounds.width * 0.4
             let increment = 1.0 / (samplesPerBeat * CGFloat(bpm / 60.0)) * 60.0
@@ -557,27 +750,13 @@ struct ECGGrid: Shape {
 
 /// Synthetic PQRST waveform — t is 0...1 within one beat cycle
 private func ecgValue(at t: CGFloat) -> CGFloat {
-    // Baseline
     var v: CGFloat = 0
-
-    // P wave (small bump at ~0.1)
     v += gaussian(t, center: 0.10, width: 0.025, height: 0.12)
-
-    // Q wave (small dip before R)
     v -= gaussian(t, center: 0.18, width: 0.008, height: 0.08)
-
-    // R wave (tall spike)
     v += gaussian(t, center: 0.20, width: 0.012, height: 1.0)
-
-    // S wave (dip after R)
     v -= gaussian(t, center: 0.23, width: 0.010, height: 0.20)
-
-    // T wave (medium bump at ~0.35)
     v += gaussian(t, center: 0.35, width: 0.035, height: 0.25)
-
-    // Small U wave
     v += gaussian(t, center: 0.45, width: 0.025, height: 0.04)
-
     return v
 }
 

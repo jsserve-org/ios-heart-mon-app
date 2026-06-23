@@ -13,9 +13,35 @@ class HealthKitManager: ObservableObject {
     @Published var airPodsSource: String? = nil
     @Published var history: [HeartRateReading] = []
     @Published var stats: HeartRateStats? = nil
+    @Published var hrv: Double? = nil
+    @Published var trend: Trend = .stable
+    @Published var zoneBreakdown: [ZoneBreakdownEntry] = []
+    @Published var sessionStart: Date? = nil
 
     enum AuthStatus {
         case notDetermined, authorized, denied, unavailable
+    }
+
+    enum Trend: String {
+        case rising = "Rising"
+        case falling = "Falling"
+        case stable = "Stable"
+
+        var icon: String {
+            switch self {
+            case .rising: return "arrow.up.right"
+            case .falling: return "arrow.down.right"
+            case .stable: return "arrow.right"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .rising: return .orange
+            case .falling: return .blue
+            case .stable: return .white.opacity(0.5)
+            }
+        }
     }
 
     struct HeartRateReading: Identifiable, Equatable {
@@ -31,6 +57,13 @@ class HealthKitManager: ObservableObject {
         let max: Double
         let average: Double
         let count: Int
+    }
+
+    struct ZoneBreakdownEntry: Identifiable {
+        let id = UUID()
+        let zone: HeartRateZone
+        let count: Int
+        var fraction: Double { 0 } // computed externally
     }
 
     enum HeartRateZone: String, CaseIterable {
@@ -72,11 +105,18 @@ class HealthKitManager: ObservableObject {
     }
 
     private let heartRateType = HKQuantityType(.heartRate)
-    private let maxHistoryCount = 60
+    private let maxHistoryCount = 120
 
     var isHealthKitAvailable: Bool {
         HKHealthStore.isHealthDataAvailable()
     }
+
+    var sessionDuration: TimeInterval {
+        guard let start = sessionStart else { return 0 }
+        return Date().timeIntervalSince(start)
+    }
+
+    var maxHR: Double { 220 } // theoretical max for gauge
 
     // MARK: - Authorization
 
@@ -101,6 +141,7 @@ class HealthKitManager: ObservableObject {
 
     func startMonitoring() {
         stopMonitoring()
+        sessionStart = Date()
         setupLiveQuery()
     }
 
@@ -112,6 +153,10 @@ class HealthKitManager: ObservableObject {
     func clearHistory() {
         history = []
         stats = nil
+        hrv = nil
+        trend = .stable
+        zoneBreakdown = []
+        sessionStart = Date()
     }
 
     // One anchored query handles both the initial batch and all future updates.
@@ -166,6 +211,9 @@ class HealthKitManager: ObservableObject {
         airPodsSource = isAirPods(sample.sourceRevision) ? sample.sourceRevision.source.name : nil
         errorMessage = nil
 
+        // Start session on first data
+        if sessionStart == nil { sessionStart = Date() }
+
         // Append new readings to history
         for s in newSamples {
             let value = s.quantity.doubleValue(for: HKUnit(from: "count/min"))
@@ -183,6 +231,9 @@ class HealthKitManager: ObservableObject {
         }
 
         updateStats()
+        updateHRV()
+        updateTrend()
+        updateZoneBreakdown()
     }
 
     private func updateStats() {
@@ -194,6 +245,53 @@ class HealthKitManager: ObservableObject {
             average: values.reduce(0, +) / Double(values.count),
             count: values.count
         )
+    }
+
+    private func updateHRV() {
+        // RMSSD — root mean square of successive differences (ms)
+        // Requires at least 3 readings for meaningful value
+        guard history.count >= 3 else { hrv = nil; return }
+        let recent = history.prefix(20).map(\.bpm)
+        var sumSquaredDiffs: Double = 0
+        for i in 0..<(recent.count - 1) {
+            let diff = recent[i + 1] - recent[i]
+            sumSquaredDiffs += diff * diff
+        }
+        let meanSquare = sumSquaredDiffs / Double(recent.count - 1)
+        hrv = sqrt(meanSquare)
+    }
+
+    private func updateTrend() {
+        guard history.count >= 6 else { trend = .stable; return }
+        let recent = Array(history.prefix(10).map(\.bpm))
+        let firstHalf = recent.suffix(recent.count / 2).reduce(0, +) / Double(recent.count / 2)
+        let secondHalf = recent.prefix(recent.count / 2).reduce(0, +) / Double(recent.count / 2)
+        // firstHalf = older readings, secondHalf = newer readings
+        let delta = firstHalf - secondHalf // positive = rising (newer is higher in the array = older)
+        // Wait — history is newest-first, so prefix = newest, suffix = older
+        let newerAvg = recent.prefix(recent.count / 2).reduce(0, +) / Double(recent.count / 2)
+        let olderAvg = recent.suffix(recent.count / 2).reduce(0, +) / Double(recent.count / 2)
+        let diff = newerAvg - olderAvg
+        if diff > 3 {
+            trend = .rising
+        } else if diff < -3 {
+            trend = .falling
+        } else {
+            trend = .stable
+        }
+    }
+
+    private func updateZoneBreakdown() {
+        guard !history.isEmpty else { zoneBreakdown = []; return }
+        var counts: [HeartRateZone: Int] = [:]
+        for zone in HeartRateZone.allCases { counts[zone] = 0 }
+        for reading in history { counts[reading.zone, default: 0] += 1 }
+        let total = Double(history.count)
+        zoneBreakdown = HeartRateZone.allCases
+            .filter { (counts[$0] ?? 0) > 0 }
+            .map { zone in
+                ZoneBreakdownEntry(zone: zone, count: counts[zone] ?? 0)
+            }
     }
 
     // AirPods Pro 3 surfaces its source name as "AirPods" in HealthKit.
