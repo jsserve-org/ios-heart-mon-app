@@ -5,11 +5,16 @@ An iOS app that fetches and displays real-time heart rate data from **AirPods Pr
 ## Features
 
 - **Real-time heart rate** — live BPM from AirPods Pro 3 or any connected source
+- **Circular HR gauge** — animated ring showing BPM within max heart rate
 - **Pulsing heart animation** — beats at your actual measured BPM with glow effects
 - **Heart rate zones** — Rest, Fat Burn, Cardio, Peak, Extreme with color coding
 - **Live statistics** — min, max, and average across your session
+- **HRV (Heart Rate Variability)** — RMSSD calculated from recent readings
+- **Trend indicator** — shows if HR is rising, falling, or stable
+- **Time in zones** — stacked bar chart of zone distribution
 - **Live ECG waveform** — synthetic PQRST trace scrolling at your BPM
 - **Sparkline chart** — visual trend of your last 30 readings
+- **Session timer** — tracks how long you've been monitoring
 - **Reading history** — scrollable sheet of all captured readings with timestamps
 - **Haptic feedback** — subtle taps synced to each heartbeat
 - **AirPods detection** — automatically highlights AirPods Pro 3 as the data source
